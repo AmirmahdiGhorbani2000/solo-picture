@@ -33,13 +33,7 @@ ctx.drawImage(img, -w/2, -h/2);
 
 ## اجرا
 
-```bash
-# Clone
-git clone https://github.com/AmirmahdiGhorbani2000/solo-picture.git
-
-# Open
-open index.html   # یا دابل‌کلیک در مرورگر
-```
+فایل را دانلود کرده و روی آن دابل کلیک کنید.
 
 ## وابستگی‌ها
 
