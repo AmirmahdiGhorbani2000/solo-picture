@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SoloPicture</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',Tahoma,sans-serif}
+body{background:#1a1a2e;color:#fff;min-height:100vh;display:flex;flex-direction:column}
+header{background:#16213e;padding:1rem 2rem;display:flex;justify-content:space-between;align-items:center;border-bottom:2px solid #0f3460}
+header h1{font-size:1.5rem;background:linear-gradient(45deg,#e94560,#0f3460);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.container{display:flex;flex:1;gap:1rem;padding:1rem;flex-wrap:wrap}
+.sidebar{background:#16213e;border-radius:1rem;padding:1.5rem;width:280px;display:flex;flex-direction:column;gap:1rem;height:fit-content}
+.canvas-area{flex:1;min-width:300px;background:#0f3460;border-radius:1rem;padding:1rem;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden}
+canvas{max-width:100%;max-height:80vh;border-radius:0.5rem;cursor:crosshair}
+button{background:#e94560;border:none;color:#fff;padding:0.75rem 1.5rem;border-radius:0.5rem;cursor:pointer;font-weight:bold;transition:.3s;font-size:0.9rem}
+button:hover{background:#ff6b81;transform:translateY(-2px);box-shadow:0 5px 15px rgba(233,69,96,.3)}
+input[type="file"]{display:none}
+.upload-btn{background:#0f3460;padding:1rem;text-align:center;border-radius:0.5rem;cursor:pointer;border:2px dashed #e94560;transition:.3s}
+.upload-btn:hover{border-color:#ff6b81;background:#1a1a4e}
+input[type="range"]{width:100%;accent-color:#e94560}
+.control-group{display:flex;flex-direction:column;gap:0.5rem}
+.control-group label{font-size:0.85rem;color:#aaa;font-weight:bold}
+.slider-value{display:flex;justify-content:space-between;align-items:center}
+.slider-value span{font-size:0.8rem;background:#e94560;padding:0.2rem 0.5rem;border-radius:0.3rem}
+.filters-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:0.5rem}
+.filter-btn{background:#1a1a4e;padding:0.5rem;text-align:center;border-radius:0.5rem;cursor:pointer;transition:.3s;font-size:0.8rem;border:1px solid #333}
+.filter-btn:hover,.filter-btn.active{background:#e94560;border-color:#e94560}
+.actions{display:flex;flex-direction:column;gap:0.5rem}
+.reset-btn{background:#636e72!important}
+.toast{position:fixed;bottom:2rem;right:2rem;background:#00b894;padding:1rem 2rem;border-radius:0.5rem;animation:slideIn .3s ease;display:none;z-index:1000}
+@keyframes slideIn{from{transform:translateX(100%);opacity:0}to{transform:translateX(0);opacity:1}}
+@media(max-width:768px){.container{flex-direction:column}.sidebar{width:100%}}
+</style>
+</head>
+<body>
+<header>
+<h1>SoloPicture v1.0</h1>
+<button onclick="document.getElementById('fileInput').click()">بارگذاری عکس</button>
+<input type="file" id="fileInput" accept="image/*">
+</header>
+<div class="container">
+<div class="sidebar">
+<div class="upload-btn" onclick="document.getElementById('fileInput').click()">
+برای شروع عکس خود را بارگذاری کنید
+</div>
+<div class="control-group">
+<label>روشنایی</label>
+<div class="slider-value">
+<input type="range" id="brightness" min="0" max="200" value="100" oninput="updateSliderValue('brightnessVal',this.value);applyFilters()">
+<span id="brightnessVal">100%</span>
+</div>
+</div>
+<div class="control-group">
+<label>کنتراست</label>
+<div class="slider-value">
+<input type="range" id="contrast" min="0" max="200" value="100" oninput="updateSliderValue('contrastVal',this.value);applyFilters()">
+<span id="contrastVal">100%</span>
+</div>
+</div>
+<div class="control-group">
+<label>اشباع رنگ</label>
+<div class="slider-value">
+<input type="range" id="saturate" min="0" max="200" value="100" oninput="updateSliderValue('saturateVal',this.value);applyFilters()">
+<span id="saturateVal">100%</span>
+</div>
+</div>
+<div class="control-group">
+<label>محو</label>
+<div class="slider-value">
+<input type="range" id="blur" min="0" max="20" value="0" oninput="updateSliderValue('blurVal',this.value);applyFilters()">
+<span id="blurVal">0px</span>
+</div>
+</div>
+<div class="control-group">
+<label>چرخش</label>
+<div class="slider-value">
+<input type="range" id="rotate" min="0" max="360" value="0" oninput="updateSliderValue('rotateVal',this.value);applyFilters()">
+<span id="rotateVal">0°</span>
+</div>
+</div>
+<div class="control-group">
+<label>فیلترها</label>
+<div class="filters-grid">
+<div class="filter-btn active" onclick="setFilter('none',this)">اصلی</div>
+<div class="filter-btn" onclick="setFilter('grayscale(100%)',this)">سیاه سفید</div>
+<div class="filter-btn" onclick="setFilter('sepia(100%)',this)">سپیا</div>
+<div class="filter-btn" onclick="setFilter('invert(100%)',this)">منفی</div>
+<div class="filter-btn" onclick="setFilter('hue-rotate(90deg)',this)">رنگی</div>
+<div class="filter-btn" onclick="setFilter('contrast(200%)',this)">کنتراست بالا</div>
+</div>
+</div>
+<div class="actions">
+<button class="reset-btn" onclick="resetFilters()">بازنشانی</button>
+</div>
+</div>
+<div class="canvas-area" id="canvasArea">
+<canvas id="canvas"></canvas>
+</div>
+</div>
+<div class="toast" id="toast"></div>
+<script>
+const canvas=document.getElementById('canvas');
+const ctx=canvas.getContext('2d');
+let originalImage=null;
+let currentFilter='none';
+
+document.getElementById('fileInput').addEventListener('change',function(e){
+const file=e.target.files[0];
+if(!file)return;
+const reader=new FileReader();
+reader.onload=function(event){
+const img=new Image();
+img.onload=function(){
+originalImage=img;
+canvas.width=img.width;
+canvas.height=img.height;
+ctx.drawImage(img,0,0);
+applyFilters();
+showToast('عکس با موفقیت بارگذاری شد!');
+};
+img.src=event.target.result;
+};
+reader.readAsDataURL(file);
+});
+
+function updateSliderValue(elementId,value){
+document.getElementById(elementId).textContent=value+(elementId.includes('blur')?'px':elementId.includes('rotate')?'°':'%');
+}
+
+function setFilter(filter,element){
+currentFilter=filter;
+document.querySelectorAll('.filter-btn').forEach(btn=>btn.classList.remove('active'));
+element.classList.add('active');
+applyFilters();
+}
+
+function applyFilters(){
+if(!originalImage)return;
+const brightness=document.getElementById('brightness').value;
+const contrast=document.getElementById('contrast').value;
+const saturate=document.getElementById('saturate').value;
+const blur=document.getElementById('blur').value;
+const rotate=document.getElementById('rotate').value;
+
+ctx.filter=`brightness(${brightness}%) contrast(${contrast}%) saturate(${saturate}%) blur(${blur}px) ${currentFilter!=='none'?currentFilter:''}`;
+ctx.clearRect(0,0,canvas.width,canvas.height);
+ctx.save();
+ctx.translate(canvas.width/2,canvas.height/2);
+ctx.rotate(rotate*Math.PI/180);
+ctx.drawImage(originalImage,-canvas.width/2,-canvas.height/2);
+ctx.restore();
+ctx.filter='none';
+}
+
+function resetFilters(){
+document.getElementById('brightness').value=100;
+document.getElementById('contrast').value=100;
+document.getElementById('saturate').value=100;
+document.getElementById('blur').value=0;
+document.getElementById('rotate').value=0;
+document.getElementById('brightnessVal').textContent='100%';
+document.getElementById('contrastVal').textContent='100%';
+document.getElementById('saturateVal').textContent='100%';
+document.getElementById('blurVal').textContent='0px';
+document.getElementById('rotateVal').textContent='0°';
+currentFilter='none';
+document.querySelectorAll('.filter-btn').forEach(btn=>btn.classList.remove('active'));
+document.querySelectorAll('.filter-btn')[0].classList.add('active');
+applyFilters();
+showToast('همه فیلترها بازنشانی شدند');
+}
+
+function showToast(message){
+const toast=document.getElementById('toast');
+toast.textContent=message;
+toast.style.display='block';
+setTimeout(()=>{toast.style.display='none'},2000);
+}
+</script>
+</body>
+</html>
